@@ -149,11 +149,6 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.RPCListenAddrFlag,
 			utils.RPCPortFlag,
 			utils.RPCApiFlag,
-			utils.WSEnabledFlag,
-			utils.WSListenAddrFlag,
-			utils.WSPortFlag,
-			utils.WSApiFlag,
-			utils.WSAllowedOriginsFlag,
 			utils.IPCDisabledFlag,
 			utils.IPCPathFlag,
 			utils.RPCCORSDomainFlag,
@@ -222,10 +217,6 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.MetricsInfluxDBPasswordFlag,
 			utils.MetricsInfluxDBHostTagFlag,
 		},
-	},
-	{
-		Name:  "WHISPER (EXPERIMENTAL)",
-		Flags: whisperFlags,
 	},
 	{
 		Name: "DEPRECATED",

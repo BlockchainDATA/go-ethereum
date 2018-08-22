@@ -60,7 +60,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/internal/build"
 	"github.com/ethereum/go-ethereum/params"
-	sv "github.com/ethereum/go-ethereum/swarm/version"
 )
 
 var (
@@ -82,12 +81,6 @@ var (
 		executablePath("wnode"),
 	}
 
-	// Files that end up in the swarm*.zip archive.
-	swarmArchiveFiles = []string{
-		"COPYING",
-		executablePath("swarm"),
-	}
-
 	// A debian package is created for all executables listed here.
 	debExecutables = []debExecutable{
 		{
@@ -106,27 +99,6 @@ var (
 			BinaryName:  "geth",
 			Description: "Ethereum CLI client.",
 		},
-		{
-			BinaryName:  "puppeth",
-			Description: "Ethereum private network manager.",
-		},
-		{
-			BinaryName:  "rlpdump",
-			Description: "Developer utility tool that prints RLP structures.",
-		},
-		{
-			BinaryName:  "wnode",
-			Description: "Ethereum Whisper diagnostic tool",
-		},
-	}
-
-	// A debian package is created for all executables listed here.
-	debSwarmExecutables = []debExecutable{
-		{
-			BinaryName:  "swarm",
-			PackageName: "ethereum-swarm",
-			Description: "Ethereum Swarm daemon and tools",
-		},
 	}
 
 	debEthereum = debPackage{
@@ -135,20 +107,13 @@ var (
 		Executables: debExecutables,
 	}
 
-	debSwarm = debPackage{
-		Name:        "ethereum-swarm",
-		Version:     sv.Version,
-		Executables: debSwarmExecutables,
-	}
-
 	// Debian meta packages to build and push to Ubuntu PPA
 	debPackages = []debPackage{
-		debSwarm,
 		debEthereum,
 	}
 
 	// Packages to be cross-compiled by the xgo command
-	allCrossCompiledArchiveFiles = append(allToolsArchiveFiles, swarmArchiveFiles...)
+	allCrossCompiledArchiveFiles = allToolsArchiveFiles
 
 	// Distros for which packages are created.
 	// Note: vivid is unsupported because there is no golang-1.6 package for it.
@@ -386,11 +351,9 @@ func doLint(cmdline []string) {
 // Release Packaging
 func doArchive(cmdline []string) {
 	var (
-		arch   = flag.String("arch", runtime.GOARCH, "Architecture cross packaging")
-		atype  = flag.String("type", "zip", "Type of archive to write (zip|tar)")
-		signer = flag.String("signer", "", `Environment variable holding the signing key (e.g. LINUX_SIGNING_KEY)`)
-		upload = flag.String("upload", "", `Destination to upload the archives (usually "gethstore/builds")`)
-		ext    string
+		arch  = flag.String("arch", runtime.GOARCH, "Architecture cross packaging")
+		atype = flag.String("type", "zip", "Type of archive to write (zip|tar)")
+		ext   string
 	)
 	flag.CommandLine.Parse(cmdline)
 	switch *atype {
@@ -408,9 +371,6 @@ func doArchive(cmdline []string) {
 		basegeth = archiveBasename(*arch, params.ArchiveVersion(env.Commit))
 		geth     = "geth-" + basegeth + ext
 		alltools = "geth-alltools-" + basegeth + ext
-
-		baseswarm = archiveBasename(*arch, sv.ArchiveVersion(env.Commit))
-		swarm     = "swarm-" + baseswarm + ext
 	)
 	maybeSkipArchive(env)
 	if err := build.WriteArchive(geth, gethArchiveFiles); err != nil {
@@ -418,14 +378,6 @@ func doArchive(cmdline []string) {
 	}
 	if err := build.WriteArchive(alltools, allToolsArchiveFiles); err != nil {
 		log.Fatal(err)
-	}
-	if err := build.WriteArchive(swarm, swarmArchiveFiles); err != nil {
-		log.Fatal(err)
-	}
-	for _, archive := range []string{geth, alltools, swarm} {
-		if err := archiveUpload(archive, *upload, *signer); err != nil {
-			log.Fatal(err)
-		}
 	}
 }
 
@@ -642,17 +594,6 @@ func (meta debMetadata) ExeName(exe debExecutable) string {
 		return exe.Package() + "-unstable"
 	}
 	return exe.Package()
-}
-
-// EthereumSwarmPackageName returns the name of the swarm package based on
-// environment, e.g. "ethereum-swarm-unstable", or "ethereum-swarm".
-// This is needed so that we make sure that "ethereum" package,
-// depends on and installs "ethereum-swarm"
-func (meta debMetadata) EthereumSwarmPackageName() string {
-	if isUnstableBuild(meta.Env) {
-		return debSwarm.Name + "-unstable"
-	}
-	return debSwarm.Name
 }
 
 // ExeConflicts returns the content of the Conflicts field
